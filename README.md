@@ -78,7 +78,7 @@ Evidence of the bot working (Telegram Notifications):
   <img src="screenshots/telegram.png" alt="Telegram Notification" width="400">
 </div>
 
-<!-- Other Proofs -->
+
 <div align="center">
   <img src="screenshots/begeni_kanit.png" alt="Top Liked Tweet" width="300">
   <img src="screenshots/rt_kanit.png" alt="Top RT Tweet" width="300">
@@ -91,7 +91,7 @@ Check out the active Twitter account managed by this bot:
 
 ### 👨‍💻 Developer
 
-Developed by **[@ardakilicaslan](https://twitter.com/ardakilicaslan)**.
+Developed by **[@ardakilicaslan]**.
 
 ### ⚠️ Disclaimer
 
