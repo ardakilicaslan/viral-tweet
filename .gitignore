@@ -1,0 +1,16 @@
+# Environments
+.env
+venv/
+__pycache__/
+
+# Browser data
+cookies.json
+playwright-log.txt
+
+# IDE
+.vscode/
+.idea/
+
+# System
+.DS_Store
+Thumbs.db

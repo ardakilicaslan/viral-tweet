@@ -1,0 +1,37 @@
+name: Daily Viral Tweet Bot
+
+on:
+  schedule:
+    # Runs at 17:45 TRT (14:45 UTC) every day
+    - cron: '45 14 * * *'
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install playwright requests python-telegram-bot python-dotenv
+        playwright install --with-deps chromium
+        
+    - name: Create cookies.json
+      # We create the file from the secret JSON string
+      run: |
+        echo '${{ secrets.TWITTER_COOKIES }}' > cookies.json
+      
+    - name: Run Bot
+      env:
+        BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        CHAT_ID: ${{ secrets.CHAT_ID }}
+      run: python main.py
