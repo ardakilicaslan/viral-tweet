@@ -91,7 +91,7 @@ Check out the active Twitter account managed by this bot:
 
 ### 👨‍💻 Developer
 
-Developed by **[@ardakilicaslan]**.
+Developed by **[@ardakilicaslan](https://github.com/ardakilicaslan)**.
 
 ### ⚠️ Disclaimer
 
