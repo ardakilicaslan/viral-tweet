@@ -8,91 +8,127 @@
 ![Playwright](https://img.shields.io/badge/Playwright-Automation-green)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
-**ViralTweet** is an advanced Python tool designed to analyze social media trends automatically and report high-engagement content. Powered by a robust Playwright scraping engine, it identifies the most popular posts based on specific criteria (likes, retweets, etc.) and sends instant notifications via Telegram.
+**ViralTweet**, Twitter / X üzerindeki en popüler ve viral gönderileri (en çok beğeni ve en çok retweet alan tweetleri) otomatik olarak tarayan, filtreleyen ve Telegram kanalınıza veya grubunuza anlık olarak raporlayan gelişmiş bir Python botudur.
 
-### 🚀 Features
+---
 
-*   **Smart Scraping:** Seamless data collection on modern web apps using Playwright.
-*   **Advanced Filtering:** Precise search based on date, language, like count, and retweet count.
-*   **Auto Notifications:** Instant reporting of top content via Telegram bot.
-*   **Human-like Behavior:** Natural navigation simulation to bypass bot detection.
-*   **Cookie Management:** Secure cookie handling for session persistence.
+### 🚀 Özellikler (Features)
 
-### 🛠️ Installation
+*   **Akıllı Kazıma (Playwright):** Modern Twitter / X React arayüzü ve sanallaştırılmış liste yapısına uygun dinamik veri çekme.
+*   **Gelişmiş Metrik Ayrıştırma:** Türkçe ve İngilizce beğeni/RT formatlarını (örn. `25.432`, `12.4K`, `1,5 B`, `2,5 Mn`, `150 Bin`) hatasız sayısal değere çevirme.
+*   **Esnek Kimlik Doğrulama:**
+    *   İster otomatik `python get_cookies.py` ile tarayıcıdan tek tıkla `cookies.json` oluşturma,
+    *   İster `.env` içerisine tek satır `TWITTER_AUTH_TOKEN` yazarak çalışma,
+    *   İster GitHub Secrets üzerinden tam otomatik çalışma.
+*   **Telegram Bildirimi:** Güvenli HTML formatı ile kullanıcı adlarında alt çizgi (`_`) gibi karakterler olsa bile çökmeden şık bildirim kartı gönderme.
+*   **Adaptif Filtreleme:** Günün etkileşim seviyesine göre kademeli eşik (threshold) denemesi ile hiçbir günü boş geçmeme.
 
-1.  **Clone the Repository:**
+---
+
+### 🛠️ Kurulum (Installation)
+
+1.  **Projeyi Klonlayın:**
     ```bash
     git clone https://github.com/ardakilicaslan/viral-tweet.git
-    cd ViralTweet
+    cd viral-tweet
     ```
 
-2.  **Create a Virtual Environment (Recommended):**
+2.  **Sanal Ortam Oluşturun (Önerilen):**
     ```bash
     python -m venv venv
-    # For Windows:
+    # Windows için:
     venv\Scripts\activate
-    # For Mac/Linux:
+    # Mac/Linux için:
     source venv/bin/activate
     ```
 
-3.  **Install Dependencies:**
+3.  **Bağımlılıkları Yükleyin:**
     ```bash
     pip install -r requirements.txt
     playwright install chromium
     ```
 
-### 🍪 How to Get Cookies
+---
 
-Since Twitter requires login for search, you need to provide your cookies. This is safe and local.
+### 🍪 Twitter / X Girişi (Kimlik Doğrulama)
 
-1.  Install **[EditThisCookie](https://chrome.google.com/webstore/detail/editthiscookie/fngmhnnpilhplaeedifhccceomclgfbg)** extension on Chrome/Edge.
-2.  Log in to Twitter (X.com).
-3.  Click the extension icon and click "Export" (Copies to clipboard).
-4.  Create a file named `cookies.json` in the project folder.
-5.  Paste the content and save.
+X (Twitter) arama sayfalarına erişebilmek için oturum açılmış olmalıdır. Bunun için 2 kolay yöntem vardır:
 
-### ⚙️ Configuration
+#### Seçenek A: Otomatik Araç (En Kolayı)
+```bash
+python get_cookies.py
+```
+Açılan pencerede Twitter hesabınıza giriş yapın ve terminale dönüp **ENTER** tuşuna basın. `cookies.json` otomatik oluşturulacaktır!
 
-1.  Rename `.env.example` to `.env`.
-2.  Enter your Telegram Bot credentials:
-    ```env
-    BOT_TOKEN=your_bot_token
-    CHAT_ID=your_chat_id
-    ```
+#### Seçenek B: `.env` Dosyasına Token Eklemek
+Tarayıcınızda (F12 -> Uygulama / Application -> Çerezler / Cookies -> `x.com`) listesindeki **`auth_token`** değerini kopyalayıp `.env` dosyasına yazın:
+```env
+TWITTER_AUTH_TOKEN=kopyalanan_auth_token_degeri
+```
 
-### ▶️ Usage
+---
 
-To start the application:
+### ⚙️ Yapılandırma (.env)
+
+`.env.example` dosyasını `.env` olarak kopyalayın:
+
+```env
+# Telegram Bot Bilgileri
+BOT_TOKEN=123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ
+CHAT_ID=123456789
+
+# Twitter Girişi (cookies.json varsa zorunlu değildir)
+TWITTER_AUTH_TOKEN=
+TWITTER_CT0=
+```
+
+---
+
+### ▶️ Kullanım (Usage)
+
+Botu çalıştırmak için:
 
 ```bash
 python main.py
 ```
 
-The system will automatically scan for the most popular Turkish content from the last 24 hours and forward the results to your Telegram channel.
+Tarayıcıyı arka planda gizli değil, ekranda görerek çalıştırmak isterseniz:
+```bash
+python main.py --no-headless
+```
 
-### 📸 Screenshots (Proof)
+Belirli bir gün için geriye dönük arama yapmak isterseniz:
+```bash
+python main.py --date 2026-10-10
+```
 
-Evidence of the bot working (Telegram Notifications):
+---
+
+### 🤖 GitHub Actions ile Otomatik Çalıştırma
+
+Botun her gece kendi kendine çalışıp Telegram'a mesaj atması için:
+1. GitHub reponuzda **Settings -> Secrets and variables -> Actions** bölümüne gidin.
+2. Aşağıdaki Secret'ları ekleyin:
+   * `BOT_TOKEN`: Telegram bot tokenınız
+   * `CHAT_ID`: Telegram chat id'niz
+   * `TWITTER_AUTH_TOKEN`: X hesabınızın auth_token çerezi (veya `TWITTER_COOKIES` JSON'ı)
+3. `.github/workflows/daily_bot.yml` her gece TR saatiyle 00:00'da otomatik çalışacaktır!
+
+---
+
+### 📸 Ekran Görüntüleri (Screenshots)
 
 <div align="center">
   <img src="screenshots/telegram.png" alt="Telegram Notification" width="400">
 </div>
-
 
 <div align="center">
   <img src="screenshots/begeni_kanit.png" alt="Top Liked Tweet" width="300">
   <img src="screenshots/rt_kanit.png" alt="Top RT Tweet" width="300">
 </div>
 
-### 🔴 Live Demo
+---
 
-Check out the active Twitter account managed by this bot:
-**[➡️ @Neleroluyorbot (Click to View)](https://x.com/Neleroluyorbot)**
+### 👨‍💻 Geliştirici
 
-### 👨‍💻 Developer
-
-Developed by **[@ardakilicaslan](https://github.com/ardakilicaslan)**.
-
-### ⚠️ Disclaimer
-
-This project is for educational and research purposes only. Users are responsible for complying with the Terms of Service (ToS) of the target platforms. The developer assumes no liability for the misuse of this tool.
+Geliştirici: **[@ardakilicaslan](https://github.com/ardakilicaslan)**

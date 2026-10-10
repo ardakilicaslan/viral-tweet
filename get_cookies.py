@@ -1,41 +1,59 @@
-from playwright.sync_api import sync_playwright
 import json
-import time
+from playwright.sync_api import sync_playwright
 
 def main():
-    print("Twitter Cookie Extractor")
-    print("------------------------")
-    print("1. A browser window will open.")
-    print("2. Log in to Twitter (X) if not already logged in.")
-    print("3. Once you are on the home page, close the browser window.")
-    print("4. Cookies will be saved to 'cookies.json'.")
-    print("------------------------")
-    
+    print("=" * 60)
+    print("         Twitter / X Cookie & Session Çıkarıcı")
+    print("=" * 60)
+    print("1. Otomatik olarak bir Chromium tarayıcı penceresi açılacak.")
+    print("2. X (Twitter) hesabınıza giriş yapın.")
+    print("3. Ana sayfaya ulaştıktan sonra terminale dönün ve ENTER'a basın.")
+    print("4. Çerezler 'cookies.json' dosyasına kaydedilecek.")
+    print("=" * 60)
+
     with sync_playwright() as p:
-        # Launch with headless=False so user can see and interact
-        browser = p.chromium.launch(headless=False)
-        context = browser.new_context()
+        browser = p.chromium.launch(
+            headless=False,
+            args=["--disable-blink-features=AutomationControlled"]
+        )
+        context = browser.new_context(
+            viewport={"width": 1280, "height": 850},
+            locale="tr-TR"
+        )
         page = context.new_page()
-        
-        print("Opening Twitter...")
-        page.goto("https://x.com")
-        
-        try:
-            # Wait for user to close the page/browser
-            # We loop and check if page is closed
-            while not page.is_closed():
-                time.sleep(1)
-        except Exception:
-            pass
-            
-        print("Browser closed. Saving cookies...")
+
+        print("\nX (Twitter) açılıyor...")
+        page.goto("https://x.com/login")
+
+        input("\n>>> Giriş işlemini tamamladıktan sonra lütfen buraya gelip ENTER tuşuna basın <<< ")
+
+        print("\nÇerezler alınıyor...")
         cookies = context.cookies()
-        
-        with open("cookies.json", "w") as f:
-            json.dump(cookies, f)
-            
-        print(f"Successfully saved {len(cookies)} cookies to 'cookies.json'.")
-        print("Copy the content of this file to your GitHub Secret 'TWITTER_COOKIES'.")
+
+        with open("cookies.json", "w", encoding="utf-8") as f:
+            json.dump(cookies, f, indent=2, ensure_ascii=False)
+
+        print(f"✅ Başarılı! {len(cookies)} adet çerez 'cookies.json' dosyasına kaydedildi.")
+
+        # Print auth_token and ct0 for convenience
+        auth_token = None
+        ct0 = None
+        for c in cookies:
+            if c.get("name") == "auth_token":
+                auth_token = c.get("value")
+            elif c.get("name") == "ct0":
+                ct0 = c.get("value")
+
+        if auth_token:
+            print("\n" + "-" * 60)
+            print("🔑 HIZLI KURULUM İÇİN .env DEĞERLERİNİZ:")
+            print(f"TWITTER_AUTH_TOKEN={auth_token}")
+            if ct0:
+                print(f"TWITTER_CT0={ct0}")
+            print("-" * 60)
+
+        browser.close()
+        print("\nİşlem tamamlandı. Tarayıcı kapatıldı.")
 
 if __name__ == "__main__":
     main()

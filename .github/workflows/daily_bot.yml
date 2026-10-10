@@ -1,1 +1,37 @@
+name: Daily Viral Tweet Tracker
 
+on:
+  schedule:
+    # Her gün Türkiye saati ile gece 00:00 (UTC 21:00)
+    - cron: '0 21 * * *'
+  workflow_dispatch: # Manuel tetikleme butonu
+
+jobs:
+  run-tracker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repoyu Klonla
+        uses: actions/checkout@v4
+
+      - name: Python Kurulumu
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Bağımlılıkları Yükle
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          playwright install chromium --with-deps
+
+      - name: Botu Çalıştır
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          TWITTER_AUTH_TOKEN: ${{ secrets.TWITTER_AUTH_TOKEN }}
+          TWITTER_CT0: ${{ secrets.TWITTER_CT0 }}
+          TWITTER_COOKIES: ${{ secrets.TWITTER_COOKIES }}
+        run: |
+          python main.py

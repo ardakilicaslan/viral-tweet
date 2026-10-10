@@ -1,52 +1,116 @@
 import os
 import sys
+import argparse
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from scraper import get_top_tweet
 from notifier import send_telegram_message
 
-# Load environment variables from .env file
+# Load environment variables
 load_dotenv()
 
-def main():
-    # Configuration
+def run_tracker(headless: bool = True, target_date: str = None):
+    # Telegram Configuration
     BOT_TOKEN = os.environ.get("BOT_TOKEN")
     CHAT_ID = os.environ.get("CHAT_ID")
-    
+
     if not BOT_TOKEN or not CHAT_ID:
-        print("Error: BOT_TOKEN or CHAT_ID not found in environment variables.")
-        print("Please set them in your .env file or system environment variables.")
-        sys.exit(1)
+        print("\n[BİLGİ] Telegram BOT_TOKEN veya CHAT_ID .env dosyasında bulunamadı.")
+        print("[BİLGİ] Sonuçlar sadece konsola yazdırılacak.\n")
 
-    # Calculate date range (Last 24 hours)
-    # We look for tweets since yesterday
-    # Calculate date range (Yesterday full day)
-    today = datetime.now().strftime("%Y-%m-%d")
-    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-    
-    # 1. Find Most Liked Tweet
-    print("--- Searching for Most Liked Tweet ---")
-    # Strict date range: since yesterday until today (covers yesterday 00:00 to 23:59)
-    query_likes = f"lang:tr min_faves:25000 since:{yesterday} until:{today}"
-    top_like_tweet = get_top_tweet(query_likes, sort_metric="likes", headless=True)
-    
+    # Date range calculation
+    if target_date:
+        # User specified custom date (YYYY-MM-DD)
+        dt = datetime.strptime(target_date, "%Y-%m-%d")
+        since_date = dt.strftime("%Y-%m-%d")
+        until_date = (dt + timedelta(days=1)).strftime("%Y-%m-%d")
+    else:
+        # Default: Last 24-48 hours (since yesterday)
+        today = datetime.now().strftime("%Y-%m-%d")
+        yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+        since_date = yesterday
+        until_date = today
+
+    print(f"Hedef Tarih Aralığı: {since_date} -> {until_date}")
+
+    # 1. EN ÇOK BEĞENİLEN TWEET ARAMASI
+    print("\n" + "=" * 50)
+    print("🔥 EN ÇOK BEĞENİLEN TWEET ARANIYOR...")
+    print("=" * 50)
+
+    # Adaptive search thresholds to ensure results even on lower volume days
+    like_thresholds = [20000, 10000, 5000, 1000]
+    top_like_tweet = None
+
+    for min_faves in like_thresholds:
+        query_likes = f"lang:tr min_faves:{min_faves} since:{since_date}"
+        print(f"Denetlenen sorgu: {query_likes}")
+        top_like_tweet = get_top_tweet(query_likes, sort_metric="likes", headless=headless)
+        if top_like_tweet:
+            break
+        print(f"Eşik ({min_faves}) ile sonuç bulunamadı, daha düşük eşik deneniyor...")
+
     if top_like_tweet:
-        print(f"Found top liked tweet: {top_like_tweet['link']}")
-        send_telegram_message(BOT_TOKEN, CHAT_ID, top_like_tweet, title="🔥 Günün En Çok Beğenilen Tweeti 🔥", metric_type="likes")
-    else:
-        print("No liked tweets found.")
+        print("\n✅ En Çok Beğenilen Tweet Bulundu:")
+        print(f"   Kullanıcı : {top_like_tweet['display_name']} ({top_like_tweet['handle']})")
+        print(f"   Beğeni    : {top_like_tweet['likes']:,}")
+        print(f"   RT        : {top_like_tweet['retweets']:,}")
+        print(f"   Link      : {top_like_tweet['link']}")
+        print(f"   Metin     : {top_like_tweet['text'][:120]}...")
 
-    # 2. Find Most Retweeted Tweet
-    print("--- Searching for Most Retweeted Tweet ---")
-    # Lower threshold to 1000 to catch more candidates, let our sorter find the real top
-    query_rts = f"lang:tr min_retweets:1000 since:{yesterday} until:{today}"
-    top_rt_tweet = get_top_tweet(query_rts, sort_metric="retweets", headless=True)
-    
-    if top_rt_tweet:
-        print(f"Found top RT tweet: {top_rt_tweet['link']}")
-        send_telegram_message(BOT_TOKEN, CHAT_ID, top_rt_tweet, title="🔄 Günün En Çok RT Alan Tweeti 🔄", metric_type="retweets")
+        if BOT_TOKEN and CHAT_ID:
+            send_telegram_message(
+                BOT_TOKEN,
+                CHAT_ID,
+                top_like_tweet,
+                title="🔥 Günün En Çok Beğenilen Tweeti 🔥",
+                metric_type="likes"
+            )
     else:
-        print("No RT tweets found.")
+        print("❌ Uygun beğenilen tweet bulunamadı.")
+
+    # 2. EN ÇOK RETWEET ALAN TWEET ARAMASI
+    print("\n" + "=" * 50)
+    print("🔄 EN ÇOK RETWEET (RT) ALAN TWEET ARANIYOR...")
+    print("=" * 50)
+
+    rt_thresholds = [1000, 500, 200, 50]
+    top_rt_tweet = None
+
+    for min_rts in rt_thresholds:
+        query_rts = f"lang:tr min_retweets:{min_rts} since:{since_date}"
+        print(f"Denetlenen sorgu: {query_rts}")
+        top_rt_tweet = get_top_tweet(query_rts, sort_metric="retweets", headless=headless)
+        if top_rt_tweet:
+            break
+        print(f"Eşik ({min_rts}) ile sonuç bulunamadı, daha düşük eşik deneniyor...")
+
+    if top_rt_tweet:
+        print("\n✅ En Çok RT Alan Tweet Bulundu:")
+        print(f"   Kullanıcı : {top_rt_tweet['display_name']} ({top_rt_tweet['handle']})")
+        print(f"   RT        : {top_rt_tweet['retweets']:,}")
+        print(f"   Beğeni    : {top_rt_tweet['likes']:,}")
+        print(f"   Link      : {top_rt_tweet['link']}")
+        print(f"   Metin     : {top_rt_tweet['text'][:120]}...")
+
+        if BOT_TOKEN and CHAT_ID:
+            send_telegram_message(
+                BOT_TOKEN,
+                CHAT_ID,
+                top_rt_tweet,
+                title="🔄 Günün En Çok RT Alan Tweeti 🔄",
+                metric_type="retweets"
+            )
+    else:
+        print("❌ Uygun RT alan tweet bulunamadı.")
+
+def main():
+    parser = argparse.ArgumentParser(description="ViralTweet - Top Tweet Tracker")
+    parser.add_argument("--no-headless", action="store_true", help="Tarayıcıyı görünür modda çalıştırır")
+    parser.add_argument("--date", type=str, default=None, help="Özel tarih filtresi (YYYY-MM-DD)")
+    args = parser.parse_args()
+
+    run_tracker(headless=not args.no_headless, target_date=args.date)
 
 if __name__ == "__main__":
     main()
