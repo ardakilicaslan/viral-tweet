@@ -1,8 +1,17 @@
 import os
 import sys
+import io
 import argparse
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 from scraper import get_top_tweet
 from notifier import send_telegram_message
 
@@ -11,8 +20,8 @@ load_dotenv()
 
 def run_tracker(headless: bool = True, target_date: str = None):
     # Telegram Configuration
-    BOT_TOKEN = os.environ.get("BOT_TOKEN")
-    CHAT_ID = os.environ.get("CHAT_ID")
+    BOT_TOKEN = os.environ.get("BOT_TOKEN") or os.environ.get("TELEGRAM_BOT_TOKEN")
+    CHAT_ID = os.environ.get("CHAT_ID") or os.environ.get("TELEGRAM_CHAT_ID")
 
     if not BOT_TOKEN or not CHAT_ID:
         print("\n[BİLGİ] Telegram BOT_TOKEN veya CHAT_ID .env dosyasında bulunamadı.")
